@@ -1274,7 +1274,7 @@ UE.plugins["table"] = function() {
         if (h == "h") {
           var ut = getUETable(target),
             table = ut.table,
-            cells = getCellsByMoveBorder(target, table, true);
+            cells = getCellsByMoveBorder(target, table);
 
           cells = extractArray(cells, "left");
 
@@ -1647,9 +1647,25 @@ UE.plugins["table"] = function() {
         var i = 0;
 
         utils.each(cells, function(cellGroup) {
-          cellGroup.left.width = +cellGroup.left.width + changeValue;
-          cellGroup.right &&
-            (cellGroup.right.width = +cellGroup.right.width - changeValue);
+          // (cellGroup.left.width = +cellGroup.left.width + changeValue);
+          // cellGroup.right &&
+          //   (cellGroup.right.width = +cellGroup.right.width - changeValue);
+
+          if(cellGroup.left){
+            cellGroup.left.width = +cellGroup.left.width + changeValue
+            if(cellGroup.left.colSpan > 1){
+              cellGroup.left.style.width = "";
+              cellGroup.left.removeAttribute("width");
+            }
+          }
+
+          if(cellGroup.right) {
+            cellGroup.right.width = +cellGroup.right.width - changeValue
+            if(cellGroup.right.colSpan > 1) {
+              cellGroup.right.style.width = "";
+              cellGroup.right.removeAttribute("width");
+            }
+          }
         });
       } else {
         utils.each(cells, function(cellGroup) {
@@ -1678,62 +1694,60 @@ UE.plugins["table"] = function() {
 
   /**
      * 获取调整单元格大小的相关单元格
-     * @isContainMergeCell 返回的结果中是否包含发生合并后的单元格
      */
-  function getCellsByMoveBorder(cell, table, isContainMergeCell) {
+  function getCellsByMoveBorder(cell, table) {
     if (!table) {
       table = domUtils.findParentByTagName(cell, "table");
     }
-
+  
     if (!table) {
       return null;
     }
-
+  
     //获取到该单元格所在行的序列号
-    var index = domUtils.getNodeIndex(cell),
-      temp = cell,
-      rows = table.rows,
-      colIndex = 0;
-
-    while (temp) {
-      //获取到当前单元格在未发生单元格合并时的序列
-      if (temp.nodeType === 1) {
-        colIndex += temp.colSpan || 1;
-      }
-      temp = temp.previousSibling;
-    }
-
-    temp = null;
-
-    //记录想关的单元格
-    var borderCells = [];
-
-    utils.each(rows, function(tabRow) {
+    var ut = getUETable(table),
+      cellInfo = ut.getCellInfo(cell),
+      colIndex = cellInfo.colIndex + cellInfo.colSpan - 1,
+      rows = table.rows;
+  
+      //记录想关的单元格
+      var borderCells = [];
+    
+      utils.each(rows, function(tabRow) {
       var cells = tabRow.cells,
-        currIndex = 0;
-
+      currColIndex = 0;
+  
       utils.each(cells, function(tabCell) {
-        currIndex += tabCell.colSpan || 1;
-
-        if (currIndex === colIndex) {
+        var tabCellInfo = ut.getCellInfo(tabCell);			
+        currColIndex = tabCellInfo.colIndex + tabCellInfo.colSpan - 1;
+        
+        if(currColIndex == colIndex) {
+          var rightTabCellInfo = tabCell.nextSibling ? ut.getCellInfo(tabCell.nextSibling) : null,
+          rightTabCellColIndex = rightTabCellInfo ? rightTabCellInfo.colIndex : null,
+          rightTabCell;
+          
+          if(rightTabCellColIndex && (rightTabCellColIndex - 1 == colIndex)){
+            rightTabCell = tabCell.nextSibling;
+          }
+          
           borderCells.push({
             left: tabCell,
-            right: tabCell.nextSibling || null
+            right: rightTabCell
           });
-
+          
           return false;
-        } else if (currIndex > colIndex) {
-          if (isContainMergeCell) {
+        } else if(currColIndex > colIndex) {
+          if(currColIndex - tabCellInfo.colSpan == colIndex) {
             borderCells.push({
-              left: tabCell
+              right: tabCell
             });
           }
-
+          
           return false;
         }
       });
     });
-
+    
     return borderCells;
   }
 
