@@ -18,12 +18,12 @@ UE.plugins["table"] = function() {
     //单元格边框大小
     cellBorderWidth = 5,
     //鼠标偏移距离
-    offsetOfTableCell = 10,
+    offsetOfTableCell = 15,
     //记录在有限时间内的点击状态， 共有3个取值， 0, 1, 2。 0代表未初始化， 1代表单击了1次，2代表2次
     singleClickState = 0,
     userActionStatus = null,
     //双击允许的时间范围
-    dblclickTime = 360,
+    dblclickTime = 0,
     UT = UE.UETable,
     getUETable = function(tdOrTable) {
       return UT.getUETable(tdOrTable);
